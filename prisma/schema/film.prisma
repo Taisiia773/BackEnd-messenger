@@ -1,0 +1,19 @@
+model Film{
+    id Int @id @default(autoincrement())
+    name String
+    rating Float
+    year Int
+    language String
+    country String
+    age Int
+    img String
+    Genre Genre @relation(fields: [genreId], references: [id])
+    genreId Int
+    filmImage String
+    actors String
+    information String
+    someFacts String
+    user User @relation(fields: [userId], references: [id])
+    userId Int 
+    comment Comment[]
+}

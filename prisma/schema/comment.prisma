@@ -1,0 +1,9 @@
+model Comment{
+    id Int @id @default(autoincrement())
+    user User @relation(fields: [userId], references: [id])
+    userId Int
+    text String
+    createdAt DateTime @default(now())
+    film Film @relation(fields: [filmId], references: [id])
+    filmId Int 
+}
