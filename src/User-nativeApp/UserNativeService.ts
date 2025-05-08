@@ -4,6 +4,7 @@ import { IOkWithData ,IError, IOk } from "../types/types"
 import { hash , compare } from "bcryptjs"
 import { SECRET_KEY } from "../config/token";
 import { sign } from "jsonwebtoken";
+import { generateVerificationCode, sendVerificationEmail } from "./emailUtility";
 
 async function authLogin(email: string, password: string): Promise<IOkWithData<string> | IError> {
     const user = await UserNativeRepository.findUserByEmail(email);
@@ -54,7 +55,8 @@ async function authRegistration(userData: UserNativeCreate): Promise<IOkWithData
     
     const hashedUserData = {
         ...userData ,
-        password: hashedPassword
+        password: hashedPassword,
+        isVerified: false
     }
 
     const newUser = await UserNativeRepository.createUser(hashedUserData);
@@ -71,10 +73,54 @@ async function authRegistration(userData: UserNativeCreate): Promise<IOkWithData
     return { status: "ok", data: token };
 }
 
+export async function sendVerificationCode(email: string) {
+    const user = await UserNativeRepository.findUserByEmail(email);
+
+    if (!user || typeof user === "string") {
+        return { status: "error", message: "Пользователь не найден" };
+    }
+
+    const code = generateVerificationCode(); // Генерируем код
+    const updatedUser = await UserNativeRepository.updateVerificationCode(email, code);
+
+    if (!updatedUser) {
+        return { status: "error", message: "Не удалось сохранить код подтверждения" };
+    }
+
+    await sendVerificationEmail(email, code); // Отправляем код на email
+    return { status: "success", message: "Код отправлен на email" };
+}
+
+export async function verifyCode(email: string, code: string) {
+    const user = await UserNativeRepository.findUserByEmail(email);
+
+    if (!user || typeof user === "string") {
+        return { status: "error", message: "Пользователь не найден" };
+    }
+
+    if (!user.verificationCode) {
+        return { status: "error", message: "Код подтверждения отсутствует" };
+    }
+
+    if (user.verificationCode !== code) {
+        return { status: "error", message: "Неверный код подтверждения" };
+    }
+
+    const updatedUser = await UserNativeRepository.updateVerificationStatus(email, true);
+
+    if (!updatedUser) {
+        return { status: "error", message: "Не удалось обновить статус верификации" };
+    }
+
+    return { status: "success", message: "Email успешно подтвержден" };
+}
+
 const userNativeService = {
     authLogin: authLogin,
     authRegistration: authRegistration,
-    getUserById :getUserById 
+    getUserById :getUserById,
+    verifyCode: verifyCode,
+    sendVerificationCode: sendVerificationCode,
 }
 
 export default userNativeService

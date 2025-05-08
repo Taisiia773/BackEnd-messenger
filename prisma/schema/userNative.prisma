@@ -3,4 +3,6 @@ model UserNative {
     email String @unique
     username String
     password String
+    isVerified       Boolean  @default(false)
+    verificationCode String?
 }

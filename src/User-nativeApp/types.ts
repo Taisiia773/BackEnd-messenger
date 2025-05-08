@@ -5,6 +5,10 @@ export type UserNative = Prisma.UserNativeGetPayload<{
         username: true, 
         email: true, 
         id: true,
+        isVerified: true
     }
 }>
-export type UserNativeCreate = Prisma.UserNativeUncheckedCreateInput
+export type UserNativeCreate = Prisma.UserNativeUncheckedCreateInput & {
+    isVerified?: boolean
+    verificationCode?: string
+}

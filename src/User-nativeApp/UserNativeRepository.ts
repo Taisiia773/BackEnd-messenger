@@ -13,6 +13,8 @@ async function findUserByEmail(email: string) {
                 email: true,
                 password: true,
                 id: true,
+                isVerified: true,
+                verificationCode: true,
             },
         });
         return user;
@@ -55,6 +57,8 @@ async function findUserById (id : number) {
                 username: true, 
                 email: true, 
                 id: true,
+                isVerified: true,
+                verificationCode: true,
             },
         });
         return user;
@@ -69,10 +73,36 @@ async function findUserById (id : number) {
     }
 }
 
+async function updateVerificationCode(email: string, code: string) {
+    try {
+        return await client.userNative.update({
+            where: { email },
+            data: { verificationCode: code },
+        });
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+async function updateVerificationStatus(email: string, isVerified: boolean) {
+    try {
+        return await client.userNative.update({
+            where: { email },
+            data: { isVerified },
+        });
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
 const UserNativeRepository = {
     findUserByEmail,
     createUser, 
-    findUserById
+    findUserById,
+    updateVerificationCode,
+    updateVerificationStatus
 }
 
 export default UserNativeRepository
