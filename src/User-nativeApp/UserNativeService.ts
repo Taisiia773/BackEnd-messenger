@@ -1,126 +1,110 @@
 import UserNativeRepository from "./UserNativeRepository"
 import { UserNative, UserNativeCreate } from "./types"
-import { IOkWithData ,IError, IOk } from "../types/types"
-import { hash , compare } from "bcryptjs"
-import { SECRET_KEY } from "../config/token";
-import { sign } from "jsonwebtoken";
-import { generateVerificationCode, sendVerificationEmail } from "./emailUtility";
+import { IOkWithData, IError, IOk } from "../types/types"
+import { hash, compare } from "bcryptjs"
+import { SECRET_KEY } from "../config/token"
+import { sign } from "jsonwebtoken"
+import { generateVerificationCode, sendVerificationEmail } from "./emailUtility"
+import { Request } from "express"
+
+interface TempRegistrationData {
+    email: string
+    password: string
+    verificationCode: string
+    createdAt: number
+    attempts: number
+}
+
+declare module 'express-session' {
+    interface SessionData {
+        tempRegistration?: TempRegistrationData;
+    }
+}
 
 async function authLogin(email: string, password: string): Promise<IOkWithData<string> | IError> {
-    const user = await UserNativeRepository.findUserByEmail(email);
-
-    if (!user) {
-        return { status: "error", message: "User not users" };
-    }
-    if (typeof user === "string") {
-        return { status: "error", message: user };
-    }
-    const isMatch = await compare(password, user.password)
-
-    if (!isMatch) {
-        return { status: "error", message: "Passwords are not passwords" };
-    }
-
-    const token = sign({id: user.id}, SECRET_KEY, { expiresIn: "1d" })
-
-    return { status: "ok", data: token };
-}
-
-
-async function getUserById (id : number):Promise <IOkWithData<UserNative> | IError>{
-    const user = await UserNativeRepository.findUserById(id)
-    if (!user){
-        return { status: "error", message: "user not found" };
-    }
-    if (typeof user === "string") {
-        return { status: "error", message: user };
-    }
-    return {status : "ok" , data: user}
-}
-
-
-
-async function authRegistration(userData: UserNativeCreate): Promise<IOkWithData<string> | IError> {
-    const user = await UserNativeRepository.findUserByEmail(userData.email);
-        
-    if (user) {
-        return { status: "error", message: "user not users" };
-    }
-
-    if (typeof user === "string") {
-        return { status: "error", message: user };
-    }
-
-    const hashedPassword = await hash(userData.password, 10)
+    const user = await UserNativeRepository.findUserByEmail(email)
     
-    const hashedUserData = {
-        ...userData ,
+    if (!user) return { status: "error", message: "User not found" }
+    if (typeof user === "string") return { status: "error", message: user }
+    if (!user.isVerified) return { status: "error", message: "Email not verified" }
+
+    const isMatch = await compare(password, user.password)
+    if (!isMatch) return { status: "error", message: "Invalid password" }
+
+    const token = sign({ id: user.id }, SECRET_KEY, { expiresIn: "1d" })
+    return { status: "ok", data: token }
+}
+
+async function getUserById(id: number): Promise<IOkWithData<UserNative> | IError> {
+    const user = await UserNativeRepository.findUserById(id)
+    if (!user) return { status: "error", message: "User not found" }
+    if (typeof user === "string") return { status: "error", message: user }
+    return { status: "ok", data: user }
+}
+
+async function startRegistration(req: Request, userData: UserNativeCreate): Promise<IOk | IError> {
+    const existingUser = await UserNativeRepository.findUserByEmail(userData.email)
+    if (existingUser && typeof existingUser !== "string") {
+        return { status: "error", message: "Email already in use" }
+    }
+
+    const code = generateVerificationCode()
+    
+    req.session.tempRegistration = {
+        email: userData.email,
+        password: userData.password,
+        verificationCode: code,
+        createdAt: Date.now(),
+        attempts: 0
+    }
+
+    await sendVerificationEmail(userData.email, code)
+    return { status: "ok", message: "Verification code sent to email" }
+}
+
+async function completeRegistration(req: Request, code: string): Promise<IOkWithData<string> | IError> {
+    const tempReg = req.session.tempRegistration as TempRegistrationData
+    
+    if (!tempReg) {
+        return { status: "error", message: "Registration session expired" }
+    }
+    
+    tempReg.attempts++
+    if (tempReg.attempts > 3) {
+        delete req.session.tempRegistration
+        return { status: "error", message: "Too many attempts" }
+    }
+    
+    if (Date.now() - tempReg.createdAt > 15 * 60 * 1000) {
+        delete req.session.tempRegistration
+        return { status: "error", message: "Code expired" }
+    }
+    
+    if (tempReg.verificationCode !== code) {
+        return { status: "error", message: "Invalid code" }
+    }
+    
+    const hashedPassword = await hash(tempReg.password, 10)
+    const newUser = await UserNativeRepository.createUser({
+        email: tempReg.email,
         password: hashedPassword,
-        isVerified: false
-    }
-
-    const newUser = await UserNativeRepository.createUser(hashedUserData);
+        isVerified: true
+    })
+    
     if (typeof newUser === "string") {
-        return { status: "error", message: newUser };
+        return { status: "error", message: newUser }
     }
 
-    if (!newUser) {
-        return { status: "error", message: "User is not user" };
-    }
-
-    const token = sign({id: newUser.id}, SECRET_KEY, { expiresIn: "1d" })
-
-    return { status: "ok", data: token };
-}
-
-export async function sendVerificationCode(email: string) {
-    const user = await UserNativeRepository.findUserByEmail(email);
-
-    if (!user || typeof user === "string") {
-        return { status: "error", message: "Пользователь не найден" };
-    }
-
-    const code = generateVerificationCode(); // Генерируем код
-    const updatedUser = await UserNativeRepository.updateVerificationCode(email, code);
-
-    if (!updatedUser) {
-        return { status: "error", message: "Не удалось сохранить код подтверждения" };
-    }
-
-    await sendVerificationEmail(email, code); // Отправляем код на email
-    return { status: "success", message: "Код отправлен на email" };
-}
-
-export async function verifyCode(email: string, code: string) {
-    const user = await UserNativeRepository.findUserByEmail(email);
-
-    if (!user || typeof user === "string") {
-        return { status: "error", message: "Пользователь не найден" };
-    }
-
-    if (!user.verificationCode) {
-        return { status: "error", message: "Код подтверждения отсутствует" };
-    }
-
-    if (user.verificationCode !== code) {
-        return { status: "error", message: "Неверный код подтверждения" };
-    }
-
-    const updatedUser = await UserNativeRepository.updateVerificationStatus(email, true);
-
-    if (!updatedUser) {
-        return { status: "error", message: "Не удалось обновить статус верификации" };
-    }
-
-    return { status: "success", message: "Email успешно подтвержден" };
+    delete req.session.tempRegistration
+    const token = sign({ id: newUser.id }, SECRET_KEY, { expiresIn: "1d" })
+    return { status: "ok", data: token }
 }
 
 const userNativeService = {
-    authLogin: authLogin,
-    authRegistration: authRegistration,
-    getUserById :getUserById,
-    verifyCode: verifyCode,
-    sendVerificationCode: sendVerificationCode,
+    authLogin,
+    getUserById,
+    startRegistration,
+    completeRegistration
 }
 
 export default userNativeService

@@ -1,41 +1,37 @@
-import userNativeService from "./UserNativeService"
 import { Request, Response } from "express"
+import userNativeService from "./UserNativeService"
 
-async function authUser(req : Request , res : Response){
-    const data = req.body
-    const result = await userNativeService.authLogin(data.email, data.password)
-    res.json(result) 
-}
-
-async function registerUser(req : Request , res : Response){
-    const data = req.body
-    const result = await userNativeService.authRegistration(data)
+async function authUser(req: Request, res: Response) {
+    const { email, password } = req.body
+    const result = await userNativeService.authLogin(email, password)
     res.json(result)
 }
-async function getUser(req : Request , res : Response){
+
+async function startRegistration(req: Request, res: Response) {
+    const data = req.body
+    const result = await userNativeService.startRegistration(req, data)
+    res.json(result)
+    console.log(result)
+}
+
+async function completeRegistration(req: Request, res: Response) {
+    const { code } = req.body
+    const result = await userNativeService.completeRegistration(req, code)
+    res.json(result)
+    console.log(result)
+}
+
+async function getUser(req: Request, res: Response) {
     const userId = res.locals.userId
     const result = await userNativeService.getUserById(userId)
     res.json(result)
 }
 
-async function requestCode(req: Request, res: Response) {
-    const { email } = req.body; // Получаем email из тела запроса
-    const result = await userNativeService.sendVerificationCode(email);
-    res.json(result);
-}
-
-async function verifyEmail(req: Request, res: Response) {
-    const { email, code } = req.body; // Получаем email и код из тела запроса
-    const result = await userNativeService.verifyCode(email, code);
-    res.json(result);
-}
-
 const userNativeControllerApi = {
-    registerUser: registerUser,
-    authUser: authUser,
-    getUser: getUser,
-    verifyEmail: verifyEmail,
-    requestCode: requestCode,
+    authUser,
+    startRegistration,
+    completeRegistration,
+    getUser
 }
-export default userNativeControllerApi
 
+export default userNativeControllerApi

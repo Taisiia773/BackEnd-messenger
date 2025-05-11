@@ -9,7 +9,6 @@ async function findUserByEmail(email: string) {
                 email: email
             },
             select: {
-                username: true,
                 email: true,
                 password: true,
                 id: true,
@@ -54,7 +53,6 @@ async function findUserById (id : number) {
                 id :id
             },
             select: {
-                username: true, 
                 email: true, 
                 id: true,
                 isVerified: true,

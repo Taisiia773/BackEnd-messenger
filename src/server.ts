@@ -1,19 +1,25 @@
 import express, { Request, Response } from "express";
+import { sessionConfig } from './config/session'
 import { PrismaClient } from "@prisma/client";
+import session from 'express-session'
+import dotenv from 'dotenv'
 import * as z from "zod";
 
 import path from "path";
 import UserRouterApi from "./UserApp/UserRouterApi";
 import UserNativeRouterApi from "./User-nativeApp/UserNativeRouterApi";
 const prisma = new PrismaClient()
+dotenv.config()
 
 
-const HOST = 'localhost'
+const HOST = '172.20.10.7'
 const PORT = 5000
 
 
 const app = express()
 const cors = require('cors')
+
+app.use(session(sessionConfig))
 
 app.use(express.json())
 app.use(cors())
