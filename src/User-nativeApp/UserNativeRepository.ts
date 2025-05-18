@@ -1,13 +1,10 @@
-import { client, getErrorMessage } from "../client/prismaClient"
-import { Prisma } from "@prisma/client"
-
+import { client, getErrorMessage } from "../client/prismaClient";
+import { Prisma } from "@prisma/client";
 
 async function findUserByEmail(email: string) {
     try {
         const user = await client.userNative.findUnique({
-            where: {
-                email: email
-            },
+            where: { email },
             select: {
                 email: true,
                 password: true,
@@ -30,10 +27,7 @@ async function findUserByEmail(email: string) {
 
 async function createUser(data: Prisma.UserNativeCreateInput) {
     try {
-        console.log(data)
-        const user = await client.userNative.create({
-            data: data
-        });
+        const user = await client.userNative.create({ data });
         return user;
     } catch (err) {
         if (err instanceof Prisma.PrismaClientKnownRequestError) {
@@ -46,12 +40,10 @@ async function createUser(data: Prisma.UserNativeCreateInput) {
     }
 }
 
-async function findUserById (id : number) {
+async function findUserById(id: number) {
     try {
         const user = await client.userNative.findUnique({
-            where:{
-                id :id
-            },
+            where: { id },
             select: {
                 email: true, 
                 id: true,
@@ -83,11 +75,15 @@ async function updateVerificationCode(email: string, code: string) {
     }
 }
 
-async function updateVerificationStatus(email: string, isVerified: boolean) {
+async function verifyUser(email: string) {
     try {
         return await client.userNative.update({
             where: { email },
-            data: { isVerified },
+            data: { 
+                isVerified: true,
+                verificationCode: null,
+                verificationCodeCreatedAt: null
+            }
         });
     } catch (err) {
         console.error(err);
@@ -95,12 +91,60 @@ async function updateVerificationStatus(email: string, isVerified: boolean) {
     }
 }
 
+async function findUnverifiedUserByEmailAndCode(email: string, code: string) {
+    try {
+        return await client.userNative.findFirst({
+            where: {
+                email,
+                verificationCode: code,
+                isVerified: false,
+            },
+        });
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+async function findUnverifiedUserByEmail(email: string) {
+    try {
+        return await client.userNative.findFirst({
+            where: {
+                email,
+                isVerified: false,
+                verificationCode: { not: null }
+            }
+        });
+    } catch (err) {
+        console.error(err);
+        return null;
+    }
+}
+
+async function deleteUnverifiedUser(email: string) {
+    try {
+        await client.userNative.deleteMany({
+            where: {
+                email,
+                isVerified: false
+            }
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+
+
 const UserNativeRepository = {
     findUserByEmail,
     createUser, 
     findUserById,
     updateVerificationCode,
-    updateVerificationStatus
-}
+    verifyUser,
+    findUnverifiedUserByEmailAndCode,
+    findUnverifiedUserByEmail,
+    deleteUnverifiedUser,
+};
 
-export default UserNativeRepository
+export default UserNativeRepository;

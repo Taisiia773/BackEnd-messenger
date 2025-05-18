@@ -13,14 +13,22 @@ const transporter = nodemailer.createTransport({
         user: "catogramcorp@gmail.com", // Ваш email
         pass: "kzpp enjq ifkr prup",   // Пароль приложения
     },
+    tls: {
+        rejectUnauthorized: false // Отключает проверку сертификата
+    }
 });
 
 // Функция для отправки email с кодом подтверждения
 export const sendVerificationEmail = async (email: string, code: string) => {
-    await transporter.sendMail({
-        from: '"Cato gram" <catogramcorp@gmail.com>',
-        to: email,
-        subject: "Код подтверждения",
-        html: `<p>Ваш код подтверждения: <strong>${code}</strong></p>`,
-    });
+    try{
+        await transporter.sendMail({
+            from: '"Cato gram" <catogramcorp@gmail.com>',
+            to: email,
+            subject: "Код подтверждения",
+            html: `<p>Ваш код подтверждения: <strong>${code}</strong></p>`,
+        });
+}catch (err) {
+    console.error("Error sending email:", err);
+    throw err;
+}
 };

@@ -23,6 +23,7 @@ export function authTokenMiddleware(req: Request, res: Response, next: NextFunct
     try {
         const decodedToken = verify(token, SECRET_KEY) as IToken
         res.locals.userId = decodedToken.id
+        req.user = { id: decodedToken.id } as any; // Добавляем user в req
         next()
     }
     catch (error) {
@@ -30,3 +31,4 @@ export function authTokenMiddleware(req: Request, res: Response, next: NextFunct
     }
 
 }
+

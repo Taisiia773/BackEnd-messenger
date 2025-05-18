@@ -1,0 +1,9 @@
+model Like {
+  id     Int     @id @default(autoincrement())
+  userId Int     
+  postId Int
+  post   Post    @relation(fields: [postId], references: [id])
+  user   UserNative    @relation(fields: [userId], references: [id])
+
+   @@unique([userId, postId]) // Один лайк от пользователя на пост
+}

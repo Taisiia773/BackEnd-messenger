@@ -1,12 +1,12 @@
-import { Router } from "express"
-import userNativeControllerApi from "./UserNativeControllerApi"
-import { authTokenMiddleware } from "../middlewares/authTokenMiddleware"
+import { Router } from "express";
+import userNativeControllerApi from "./UserNativeControllerApi";
+import { authTokenMiddleware } from "../middlewares/authTokenMiddleware";
 
-const userApiRouter = Router()
+const userApiRouter = Router();
 
-userApiRouter.post("/registration/start", userNativeControllerApi.startRegistration)
-userApiRouter.post("/registration/complete", userNativeControllerApi.completeRegistration)
-userApiRouter.post("/login", userNativeControllerApi.authUser)
-userApiRouter.get("/me", authTokenMiddleware, userNativeControllerApi.getUser)
+userApiRouter.post("/registration/start", userNativeControllerApi.startRegistration);
+userApiRouter.post("/registration/complete", userNativeControllerApi.completeRegistration);
+userApiRouter.post("/login", userNativeControllerApi.authUser);
+userApiRouter.get("/me", authTokenMiddleware, userNativeControllerApi.getUser);
 
-export default userApiRouter
+export default userApiRouter;

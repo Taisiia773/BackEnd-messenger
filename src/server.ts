@@ -8,6 +8,7 @@ import * as z from "zod";
 import path from "path";
 import UserRouterApi from "./UserApp/UserRouterApi";
 import UserNativeRouterApi from "./User-nativeApp/UserNativeRouterApi";
+import postsRouter from "./UserPosts/UserPostsRoutes";
 const prisma = new PrismaClient()
 dotenv.config()
 
@@ -44,6 +45,8 @@ app.get("/", (req: Request ,res: Response) => {
 app.use("/api/user", UserRouterApi)
 
 app.use("/api/usernative", UserNativeRouterApi)
+
+app.use("/api/posts", postsRouter);
 
 
 
@@ -199,7 +202,11 @@ app.get('/genres', async (req, res) => {
       res.status(500).json({ error: `Не удалось удалить фильм с ID ${id}` });
     }
   });
-  
+
+
+  prisma.$connect()
+  .then(() => console.log("✅ Подключение к БД успешно"))
+  .catch((err) => console.error("❌ Ошибка БД:", err));
 
   app.listen(PORT, HOST, () => {
     console.log(`Listening on a port http://${HOST}:${PORT}`)

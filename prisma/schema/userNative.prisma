@@ -1,7 +1,11 @@
 model UserNative {
-    id  Int @id @default(autoincrement())
-    email String @unique
-    password String
-    isVerified       Boolean  @default(false)
-    verificationCode String?
+    id                       Int      @id @default(autoincrement())
+    email                    String   @unique
+    password                 String
+    isVerified               Boolean  @default(false)
+    verificationCode         String?
+    verificationCodeCreatedAt DateTime?
+    posts       Post[]
+    likes       Like[]    
+    views       View[]
 }

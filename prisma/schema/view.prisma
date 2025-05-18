@@ -1,0 +1,7 @@
+model View {
+  id     Int     @id @default(autoincrement())
+  userId Int?    // Кто просмотрел (null если аноним)
+  postId Int
+  post   Post    @relation(fields: [postId], references: [id])
+  user   UserNative?   @relation(fields: [userId], references: [id])
+}

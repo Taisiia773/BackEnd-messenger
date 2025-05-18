@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+import { Prisma } from "@prisma/client";
 
 export type UserNative = Prisma.UserNativeGetPayload<{
     select: {
@@ -6,16 +6,10 @@ export type UserNative = Prisma.UserNativeGetPayload<{
         id: true
         isVerified: true
     }
-}>
+}>;
 
-export type UserNativeCreate = Prisma.UserNativeUncheckedCreateInput & {
-    isVerified?: boolean
-}
-
-export interface TempRegistrationData {
-    email: string
-    password: string
-    verificationCode: string
-    createdAt: number
-    attempts: number
-}
+export type UserNativeCreate = {
+    email: string;
+    password: string;
+    isVerified?: boolean;
+};
